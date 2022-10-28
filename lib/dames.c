@@ -104,6 +104,22 @@ bool is_his_piece(pion grille[][WIDTH_TABLE], player current_player,
   return false;
 }
 
+bool is_ennemy_piece(pion grille[][WIDTH_TABLE], player current_player,
+                     pos piece) {
+  if (grille[piece.y][piece.x] == PION_EMPTY) {
+    return false;
+  }
+  if ((current_player == PLAYER_BLACK) &&
+      (grille[piece.y][piece.x] == PION_WHITE)) {
+    return true;
+  }
+  if ((current_player == PLAYER_WHITE) &&
+      (grille[piece.y][piece.x] == PION_BLACK)) {
+    return true;
+  }
+  return false;
+}
+
 void player_turn(pion grille[][WIDTH_TABLE], player current_player) {}
 
 void check_move_piece(pion grille[][WIDTH_TABLE], player current_player,
@@ -141,27 +157,57 @@ void check_moves_piece(pion grille[][WIDTH_TABLE], player current_player,
   }
 }
 
-void check_eat(pion grille[][WIDTH_TABLE], player current_player, pos pion,
-               move possible_moves[], int* nbMoves, bool* can_eat) {
-  pos truc = machin;
+void check_is_eating_move(pion grille[][WIDTH_TABLE], player current_player,
+                          pos pion, pos possible_ennemy, move possible_moves[],
+                          int* nbMoves, bool* can_eat) {
+  pos dest;
+  dest.y = 2 * possible_ennemy.y - pion.y;
+  dest.x = 2 * possible_ennemy.x - pion.x;
+  if ((is_ennemy_piece(grille, current_player, possible_ennemy)) &&
+      (grille[dest.y][dest.x] == PION_EMPTY)) {
+    move eat_move;
+    eat_move.piece = pion;
+    eat_move.destination = dest;
+    possible_moves[*nbMoves] = eat_move;
+    *nbMoves += 1;
+    *can_eat = true;
+  }
+}
+void check_eat_moves_piece(pion grille[][WIDTH_TABLE], player current_player,
+                           pos pion, move possible_moves[], int* nbMoves,
+                           bool* can_eat) {
+  pos possible_ennemy;
+  possible_ennemy.y = pion.y - 1;
+  possible_ennemy.x = pion.x - 1;
+  check_is_eating_move(grille, current_player, pion, possible_ennemy,
+                       possible_moves, nbMoves, can_eat);
+  possible_ennemy.x = pion.x + 1;
+  check_is_eating_move(grille, current_player, pion, possible_ennemy,
+                       possible_moves, nbMoves, can_eat);
+  possible_ennemy.x = pion.y - 1;
+  check_is_eating_move(grille, current_player, pion, possible_ennemy,
+                       possible_moves, nbMoves, can_eat);
+  possible_ennemy.x = pion.x - 1;
+  check_is_eating_move(grille, current_player, pion, possible_ennemy,
+                       possible_moves, nbMoves, can_eat);
 }
 
 void get_possible_moves(pion grille[][WIDTH_TABLE], player current_player,
-                        move possible_moves[80], int* nbMove) {
+                        move possible_moves[], int* nbMove) {
   pos piece;
   *nbMove = 0;
-  bool* can_eat = false;
+  bool can_eat = false;
   for (int y = 0; y < HEIGHT_TABLE; y++) {
     piece.y = y;
     for (int x = 0; x < WIDTH_TABLE; x++) {
       piece.x = x;
       if (is_his_piece(grille, current_player, piece)) {
+        check_eat_moves_piece(grille, current_player, piece, possible_moves,
+                              nbMove, &can_eat);
         if (!can_eat) {
           check_moves_piece(grille, current_player, piece, possible_moves,
                             nbMove);
         }
-        check_eat(grille, current_player, piece, possible_moves, nbMove,
-                  can_eat);
       }
     }
   }
